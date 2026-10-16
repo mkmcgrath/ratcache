@@ -1,6 +1,6 @@
-# ratnest
+# ratcache
 
-ratnest is a simple, open source pastebin built as a class project. You can paste text or code, get a shareable link, and view what other people have shared. That's all it does.
+ratcache is a simple, open source pastebin built as a class project. You can paste text or code, get a shareable link, and view what other people have shared. That's all it does.
 
 ## Features
 
