@@ -161,7 +161,9 @@ MapStaticAssets, MapControllers, MapRazorComponents<App>
 - **Secrets never go in any committed file.** That includes the AES-256-GCM key (NFR-1.3) and any SMTP password (FR-1.7).
   - Locally, use `dotnet user-secrets` in `src/RatCache.Web`.
   - On the server, use environment variables. ASP.NET maps `RatCache__EncryptionKey` to the config key `RatCache:EncryptionKey`.
-  - Suggested key name: `RatCache:EncryptionKey`. The first person to implement encryption settles it and updates this file.
+  - **Decided:** the key is `RatCache:EncryptionKey`, 32 random bytes as base64. Set it locally with
+    `dotnet user-secrets set RatCache:EncryptionKey "$(openssl rand -base64 32)" --project src/RatCache.Web`.
+    The app refuses to start without it (`Services/PasteEncryption.cs`). Changing or losing the key makes every existing paste unreadable.
 - The SQLite file `ratcache.db` is created in the web project's working directory and is git-ignored. Never commit a `.db` file.
 
 ## 6. How to add things
@@ -193,8 +195,11 @@ Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depe
 2. Follow the endpoint table in **SRS §5.2**. Don't invent different paths for those operations:
    `POST /api/pastes`, `GET/PATCH/DELETE /api/pastes/{id}`, `GET /api/pastes`, `GET /api/pastes/recent`, `POST /api/users`, `POST/DELETE /api/sessions`, `POST /api/tokens`, `DELETE /api/tokens/{id}`, `GET /raw/{id}`.
 3. JSON in and out, with camelCase property names (ASP.NET default). Use small request/response record types. **Don't return EF entity classes directly.** That would leak fields like owner IDs and encrypted blobs.
-4. Auth: web uses a session cookie; the CLI sends `Authorization: Bearer <token>` (SRS §5.2). Both must resolve to the same user identity.
-5. Errors (NFR-4.1): use standard codes (400, 401, 403, 404, 410, 413, 429, 500) with this body. The shape is the starting-point convention; if you change it, update the CLI and this file:
+4. Auth: web uses a session cookie; the CLI sends `Authorization: Bearer <token>` (SRS §5.2). Both resolve to the same claims (`Services/AuthPrincipal.cs`), so put `[Authorize]` on the action and read the user with `User.GetUserId()` (null when signed out). Don't check which scheme was used.
+   - The default scheme `ratcache` forwards to the Bearer handler when an `Authorization: Bearer` header is present, otherwise to the cookie (`Services/AuthenticationSetup.cs`).
+   - Unauthenticated `/api` requests get a JSON 401 (`sign_in_required`), never a redirect. A bad or revoked token always gets 401 `invalid_token`, even on endpoints that allow anonymous use.
+   - A web page signs someone in with `HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, AuthPrincipal.Create(user, CookieAuthenticationDefaults.AuthenticationScheme), new() { IsPersistent = true })` after `AccountService.CheckCredentialsAsync`.
+5. Errors (NFR-4.1): services return a `ServiceResult`/`ServiceError` (`Services/ServiceResult.cs`); the controller returns `ApiErrors.From(result.Error!)`, which picks the status from `ErrorKind`. Malformed or missing JSON bodies get the same shape (`invalid_request`). Use standard codes (400, 401, 403, 404, 410, 413, 429, 500) with this body. The shape is the starting-point convention; if you change it, update the CLI and this file:
    ```json
    { "error": "paste_not_found", "message": "That paste doesn't exist or has expired." }
    ```
@@ -223,8 +228,11 @@ Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depe
   dotnet ef database update --project src/RatCache.Web
   ```
   Migrations go in `src/RatCache.Web/Migrations/` and **are committed**. The `.db` file is not.
-- Whoever creates the first migration decides how the schema gets applied at startup (`Database.Migrate()` in `Program.cs` vs a manual `dotnet ef database update`) and records the choice here.
-- Tests must not touch the real `ratcache.db`. When the first DB-backed test is written, override the DbContext in `WebApplicationFactory` with an in-memory SQLite connection (`DataSource=:memory:`, kept open).
+- **Decided:** pending migrations are applied at startup with `Database.Migrate()` in `Program.cs`. No manual `dotnet ef database update` is needed; the first run creates `ratcache.db`.
+- All `DateTime` columns are UTC. The DbContext marks them `DateTimeKind.Utc` on read; always write `TimeProvider`/`DateTime.UtcNow` values.
+- `Paste.TitleCipher`/`ContentCipher` are encrypted. Read and write pastes only through `PasteService`.
+- If `dotnet ef` isn't found after installing it, add `~/.dotnet/tools` to your `PATH`.
+- Tests must not touch the real `ratcache.db`. Use `RatCacheFactory` (tests/RatCache.Tests): it gives each test class its own in-memory SQLite database and a random encryption key.
 
 ### 6.5 A CLI command
 
@@ -238,7 +246,7 @@ Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depe
 
 ### 6.6 Tests
 
-- **Server:** add classes in `tests/RatCache.Tests/`. Use `IClassFixture<WebApplicationFactory<Program>>` and real HTTP calls, as in `HealthTests.cs`. Name tests `<Thing>_<Behavior>`.
+- **Server:** add classes in `tests/RatCache.Tests/`. Use `IClassFixture<RatCacheFactory>` and real HTTP calls, as in `HealthTests.cs`. Get clients from `factory.NewClient()` (https, own cookie jar) or `await factory.SignedInClientAsync()` (a freshly registered, signed-in user). Passwords are bcrypt cost 12, so each registration costs ~0.25 s; don't create users in loops. Name tests `<Thing>_<Behavior>`.
 - **CLI:** add tests to `cli/tests/test_cli.py` or a new `cli/tests/test_*.py`.
 
 ### 6.7 Language IDs (shared by web, API, DB, CLI)
@@ -319,5 +327,7 @@ The starting point is allowed to change. Here's what to watch:
 
 - No README setup guide yet (NFR-6.1).
 - Not deployed. UpCloud deployment, HTTPS certificates (NFR-1.1), and Docker are future work.
-- Not decided yet: the encryption key config name, how migrations are applied, and the CLI config file location. Whoever decides each one records it here.
+- Not decided yet: the CLI config file location. Whoever builds `ratcache login` records it here. The CLI login flow is `POST /api/sessions` (keep the cookie), then `POST /api/tokens`; save `token` and `id` (`id` is needed for `DELETE /api/tokens/{id}` on logout).
+- Not built yet: sign-in lockout after 5 failures (NFR-2.3), JSON 500 bodies for `/api` in production (`UseExceptionHandler` currently re-executes to the HTML `/Error` page), rate limiting (NFR-3.6), and the expired-paste cleanup job (FR-3.5: expired pastes are already hidden but stay in the DB).
+- Paste links in API responses are built from the request's scheme and host. Behind nginx on UpCloud, add `UseForwardedHeaders` so they come out as `https://`.
 - SRS loose ends: FR-1.7 needs an email that registration no longer collects, NFR-3.5 still mentions email format, and §2.4 still says the stack is undecided.
