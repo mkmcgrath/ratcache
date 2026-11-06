@@ -1,0 +1,14 @@
+@page "/p/{Id}"
+
+<PageTitle>paste @Id</PageTitle>
+
+<h1>paste @Id</h1>
+
+@* TODO FR-2.3: load the paste; show NotFound if missing, expired, or private (NFR-4.2).
+   TODO FR-4.2 / FR-4.4: syntax highlighting and line numbers.
+   TODO FR-2.9: copy link / copy content buttons. *@
+<p>Not implemented yet (FR-2.3). <a href="raw/@Id">raw</a></p>
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+}

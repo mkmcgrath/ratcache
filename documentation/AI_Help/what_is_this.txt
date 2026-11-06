@@ -1,0 +1,1 @@
+This is a markdown file that you can give to any ai assistant to help guide you on what, where, or how to work on this project in a way that isnt going to cause us problems later. If you want to use AI to help you get started from here, give it this .md file first and then let it see the working repo.

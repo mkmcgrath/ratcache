@@ -1,0 +1,54 @@
+/* Keep it plain. Browser defaults first; only add what's needed. */
+
+body {
+    font-family: monospace;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+nav {
+    padding: 1rem 0;
+    border-bottom: 1px solid;
+}
+
+nav a {
+    margin-right: 1rem;
+}
+
+nav a.active {
+    text-decoration: none;
+}
+
+textarea,
+input:not([type=checkbox]):not([type=radio]) {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: monospace;
+}
+
+pre {
+    overflow-x: auto;
+}
+
+h1:focus {
+    outline: none;
+}
+
+/* Blazor form validation (EditForm) */
+.invalid {
+    outline: 1px solid red;
+}
+
+.validation-message {
+    color: red;
+}
+
+.blazor-error-boundary {
+    padding: 1rem;
+    border: 1px solid red;
+}
+
+.blazor-error-boundary::after {
+    content: "An error has occurred.";
+}
