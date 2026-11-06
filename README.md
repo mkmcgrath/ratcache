@@ -29,8 +29,12 @@ Check with `dotnet --list-sdks` and `python3 --version`.
 ```bash
 git clone git@github.com:mkmcgrath/ratcache.git
 cd ratcache
+# one time: generate the paste encryption key (stored in your user profile, not the repo)
+dotnet user-secrets set RatCache:EncryptionKey "$(openssl rand -base64 32)" --project src/RatCache.Web
 dotnet run --project src/RatCache.Web --launch-profile http
 ```
+
+The database (`src/RatCache.Web/ratcache.db`) is created on first run.
 
 Open <http://localhost:5097>.
 

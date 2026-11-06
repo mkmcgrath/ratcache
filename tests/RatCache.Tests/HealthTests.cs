@@ -1,15 +1,13 @@
 using System.Net;
 using System.Net.Http.Json;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace RatCache.Tests;
 
 // Example API test: starts the whole app in memory and calls it over HTTP.
 // Copy this pattern to test new endpoints (NFR-6.2).
-public class HealthTests(WebApplicationFactory<Program> factory)
-    : IClassFixture<WebApplicationFactory<Program>>
+public class HealthTests(RatCacheFactory factory) : IClassFixture<RatCacheFactory>
 {
-    private readonly HttpClient _client = factory.CreateClient();
+    private readonly HttpClient _client = factory.NewClient();
 
     [Fact]
     public async Task Health_ReturnsOk()
