@@ -1,47 +1,78 @@
 @page "/"
-@using RatCache.Web.Models
+@inject PasteService Pastes
+@inject NavigationManager Nav
 
 <PageTitle>ratcache</PageTitle>
 
 <h1>new paste</h1>
 
-@* TODO FR-5.1 / FR-2.1: wire this form up to create a paste.
-   Not hooked up yet, so the submit button is disabled. *@
-<form>
+@* FR-5.1 / FR-2.1: create a paste, then go to its page. Anonymous or signed in. *@
+<EditForm Model="Input" FormName="new-paste" OnSubmit="CreateAsync" method="post">
+    <ErrorMessage Error="error" />
     <p>
         <label for="title">title</label><br />
-        <input id="title" name="title" maxlength="200" />
+        <InputText id="title" @bind-Value="Input!.Title" maxlength="@PasteService.TitleMaxLength" />
     </p>
     <p>
-        <textarea id="content" name="content" rows="20" placeholder="paste here"></textarea>
+        <InputTextArea id="content" @bind-Value="Input!.Content" rows="20" placeholder="paste here" required />
     </p>
     <p>
         <label for="language">language</label>
-        <select id="language" name="language">
+        <InputSelect id="language" @bind-Value="Input!.Language">
             @foreach (var (id, label) in Languages.All)
             {
                 <option value="@id">@label</option>
             }
-        </select>
+        </InputSelect>
 
         <label for="visibility">visibility</label>
-        <select id="visibility" name="visibility">
-            <option value="public">public</option>
-            <option value="unlisted">unlisted</option>
-            <option value="private">private (signed in)</option>
-        </select>
+        <InputSelect id="visibility" @bind-Value="Input!.Visibility">
+            @foreach (var (value, label) in PasteChoices.VisibilityOptions)
+            {
+                @if (value == "private" && !SignedIn)
+                {
+                    <option value="@value" disabled>@label (sign in first)</option>
+                }
+                else
+                {
+                    <option value="@value">@label</option>
+                }
+            }
+        </InputSelect>
 
         <label for="expire">expires</label>
-        <select id="expire" name="expire">
-            <option value="never">never</option>
-            <option value="10m">10 minutes</option>
-            <option value="1h">1 hour</option>
-            <option value="1d">1 day</option>
-            <option value="1w">1 week</option>
-            <option value="1mo">1 month</option>
-        </select>
+        <InputSelect id="expire" @bind-Value="Input!.Expire">
+            @foreach (var (value, label) in PasteChoices.ExpireOptions)
+            {
+                <option value="@value">@label</option>
+            }
+        </InputSelect>
     </p>
     <p>
-        <button type="submit" disabled>create paste</button>
+        <button type="submit">create paste</button>
+        <small>max @(SignedIn ? "5 MB" : "1 MB; sign in for 5 MB")</small>
     </p>
-</form>
+</EditForm>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromForm(FormName = "new-paste")] private PasteForm? Input { get; set; }
+    private ServiceError? error;
+
+    private bool SignedIn => HttpContext.User.GetUserId() is not null;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task CreateAsync()
+    {
+        var input = new NewPaste(PasteChoices.NormalizeNewlines(Input!.Content), Input.Title,
+            Input.Language, Input.Visibility, Input.Expire);
+        var result = await Pastes.CreateAsync(input, HttpContext.User.GetUserId());
+        if (!result.Ok)
+        {
+            error = result.Error;
+            return;
+        }
+        Nav.NavigateTo($"p/{result.Value!.Id}");
+    }
+}

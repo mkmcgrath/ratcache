@@ -1,0 +1,66 @@
+@* FR-1.1 / FR-1.2: register with username + password (no email), then sign in. *@
+@inject AccountService Accounts
+@inject NavigationManager Nav
+
+<h2>register</h2>
+
+<EditForm Model="Input" FormName="register" OnSubmit="RegisterAsync" method="post">
+    <ErrorMessage Error="error" />
+    <p>
+        <label for="register-username">username</label><br />
+        <InputText id="register-username" @bind-Value="Input!.Username" autocomplete="username" required
+                   minlength="@AccountService.UsernameMinLength" maxlength="@AccountService.UsernameMaxLength" />
+        <br /><small>@AccountService.UsernameMinLength–@AccountService.UsernameMaxLength characters: letters, numbers, _ and -</small>
+    </p>
+    <p>
+        <label for="register-password">password</label><br />
+        <InputText id="register-password" type="password" @bind-Value="Input!.Password" autocomplete="new-password" required
+                   minlength="@AccountService.PasswordMinLength" maxlength="@AccountService.PasswordMaxLength" />
+        <br /><small>at least @AccountService.PasswordMinLength characters</small>
+    </p>
+    <p>
+        <label for="register-confirm">confirm password</label><br />
+        <InputText id="register-confirm" type="password" @bind-Value="Input!.Confirm" autocomplete="new-password" required />
+    </p>
+    <p><small>there's no email on the account, so a forgotten password can't be reset.</small></p>
+    <p><button type="submit">register</button></p>
+</EditForm>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromForm(FormName = "register")] private RegisterModel? Input { get; set; }
+    private ServiceError? error;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task RegisterAsync()
+    {
+        if (Input!.Password != Input.Confirm)
+        {
+            Fail(new ServiceError(ErrorKind.Invalid, "password_mismatch", "The passwords don't match."));
+            return;
+        }
+        var result = await Accounts.RegisterAsync(Input.Username, Input.Password);
+        if (!result.Ok)
+        {
+            Fail(result.Error!);
+            return;
+        }
+        await WebSignIn.SignInAsync(HttpContext, result.Value!);
+        Nav.NavigateTo(WebSignIn.LocalUrl(ReturnUrl));
+    }
+
+    private void Fail(ServiceError e)
+    {
+        error = e;
+        Input!.Password = Input.Confirm = null;
+    }
+
+    private class RegisterModel
+    {
+        public string? Username { get; set; }
+        public string? Password { get; set; }
+        public string? Confirm { get; set; }
+    }
+}

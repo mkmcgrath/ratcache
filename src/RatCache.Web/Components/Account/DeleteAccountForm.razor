@@ -1,0 +1,42 @@
+@* FR-1.6: delete the account, its pastes and its API tokens. Needs the password to confirm. *@
+@inject AccountService Accounts
+@inject NavigationManager Nav
+
+<h2>delete account</h2>
+
+<p>this deletes your account, all of your pastes, and your api tokens. it can't be undone.</p>
+
+<EditForm Model="Input" FormName="delete-account" OnSubmit="DeleteAsync" method="post">
+    <ErrorMessage Error="error" />
+    <p>
+        <label for="delete-password">password</label><br />
+        <InputText id="delete-password" type="password" @bind-Value="Input!.Password" autocomplete="current-password" required />
+    </p>
+    <p><button type="submit">delete my account</button></p>
+</EditForm>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromForm(FormName = "delete-account")] private DeleteModel? Input { get; set; }
+    private ServiceError? error;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task DeleteAsync()
+    {
+        var result = await Accounts.DeleteAccountAsync(HttpContext.User.GetUserId()!.Value, Input!.Password);
+        Input.Password = null;
+        if (!result.Ok)
+        {
+            error = result.Error;
+            return;
+        }
+        await WebSignIn.SignOutAsync(HttpContext);
+        Nav.NavigateTo("/");
+    }
+
+    private class DeleteModel
+    {
+        public string? Password { get; set; }
+    }
+}

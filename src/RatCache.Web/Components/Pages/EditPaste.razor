@@ -1,0 +1,110 @@
+@page "/p/{Id}/edit"
+@attribute [Authorize]
+@inject PasteService Pastes
+@inject NavigationManager Nav
+
+@* FR-2.5: the owner edits a paste. Anonymous pastes have no owner, so they can't be edited. *@
+@if (paste is not null)
+{
+    <PageTitle>edit @(paste.Title ?? $"paste {Id}")</PageTitle>
+
+    <h1>edit @(paste.Title ?? $"paste {Id}")</h1>
+
+    @if (!IsOwner)
+    {
+        <p>you can only edit your own pastes. <a href="p/@Id">back to the paste</a></p>
+    }
+    else
+    {
+        <EditForm Model="Input" FormName="edit-paste" OnSubmit="SaveAsync" method="post">
+            <ErrorMessage Error="error" />
+            <p>
+                <label for="title">title</label><br />
+                <InputText id="title" @bind-Value="Input!.Title" maxlength="@PasteService.TitleMaxLength" />
+            </p>
+            <p>
+                <InputTextArea id="content" @bind-Value="Input!.Content" rows="20" required />
+            </p>
+            <p>
+                <label for="language">language</label>
+                <InputSelect id="language" @bind-Value="Input!.Language">
+                    @foreach (var (id, label) in Languages.All)
+                    {
+                        <option value="@id">@label</option>
+                    }
+                </InputSelect>
+
+                <label for="visibility">visibility</label>
+                <InputSelect id="visibility" @bind-Value="Input!.Visibility">
+                    @foreach (var (value, label) in PasteChoices.VisibilityOptions)
+                    {
+                        <option value="@value">@label</option>
+                    }
+                </InputSelect>
+
+                <label for="expire">expires</label>
+                <InputSelect id="expire" @bind-Value="Input!.Expire">
+                    <option value="@Keep">keep current (@(paste.ExpiresAt is { } e ? e.ToString("yyyy-MM-dd HH:mm") + " UTC" : "never"))</option>
+                    @foreach (var (value, label) in PasteChoices.ExpireOptions)
+                    {
+                        <option value="@value">@(value == "never" ? "never" : label + " from now")</option>
+                    }
+                </InputSelect>
+            </p>
+            <p>
+                <button type="submit">save</button>
+                <a href="p/@Id">cancel</a>
+            </p>
+        </EditForm>
+    }
+}
+
+@code {
+    private const string Keep = "keep";
+
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [Parameter] public string Id { get; set; } = "";
+    [SupplyParameterFromForm(FormName = "edit-paste")] private PasteForm? Input { get; set; }
+
+    private RatCache.Web.Services.PasteView? paste;
+    private ServiceError? error;
+
+    private int UserId => HttpContext.User.GetUserId()!.Value;
+    private bool IsOwner => paste?.OwnerId == UserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Pastes.GetAsync(Id, UserId);
+        if (!result.Ok)
+        {
+            Nav.NotFound();
+            return;
+        }
+        paste = result.Value!;
+        Input ??= new PasteForm
+        {
+            Title = paste.Title,
+            Content = paste.Content,
+            Language = paste.Language,
+            Visibility = PasteChoices.Lower(paste.Visibility),
+            Expire = Keep,
+        };
+    }
+
+    private async Task SaveAsync()
+    {
+        var edit = new PasteEdit(
+            Content: PasteChoices.NormalizeNewlines(Input!.Content) ?? "",
+            Title: Input.Title ?? "", // "" removes the title
+            Language: Input.Language,
+            Visibility: Input.Visibility,
+            Expire: Input.Expire == Keep ? null : Input.Expire);
+        var result = await Pastes.UpdateAsync(Id, edit, UserId);
+        if (!result.Ok)
+        {
+            error = result.Error;
+            return;
+        }
+        Nav.NavigateTo($"p/{Id}");
+    }
+}

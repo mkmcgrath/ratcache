@@ -1,9 +1,43 @@
 @page "/my"
+@attribute [Authorize]
+@inject PasteService Pastes
 
 <PageTitle>my pastes</PageTitle>
 
 <h1>my pastes</h1>
 
-@* TODO FR-2.7: list the signed-in user's pastes, newest first.
-   TODO FR-2.5 / FR-2.6: edit and delete links. *@
-<p>Not implemented yet (FR-2.7).</p>
+@* FR-2.7: the signed-in user's pastes, newest first (expired ones are left out).
+   Edit (FR-2.5) and delete (FR-2.6) are on each paste's page. *@
+@if (pastes.Count == 0)
+{
+    <p>no pastes yet. <a href="">make one</a>.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th>title</th><th>language</th><th>visibility</th><th>created</th><th>expires</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in pastes)
+            {
+                <tr>
+                    <td><a href="p/@p.Id">@(p.Title ?? p.Id)</a></td>
+                    <td>@PasteChoices.LanguageLabel(p.Language)</td>
+                    <td>@PasteChoices.Lower(p.Visibility)</td>
+                    <td><Timestamp Value="p.CreatedAt" /></td>
+                    <td>@if (p.ExpiresAt is { } e) { <Timestamp Value="e" /> } else { <text>never</text> }</td>
+                    <td><a href="p/@p.Id/edit">edit</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    private List<PasteSummary> pastes = [];
+
+    protected override async Task OnInitializedAsync() =>
+        pastes = await Pastes.ListForUserAsync(HttpContext.User.GetUserId()!.Value);
+}

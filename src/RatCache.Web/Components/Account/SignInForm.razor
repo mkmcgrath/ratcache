@@ -1,0 +1,46 @@
+@* FR-1.3: sign in with username + password. *@
+@inject AccountService Accounts
+@inject NavigationManager Nav
+
+<h2>sign in</h2>
+
+<EditForm Model="Input" FormName="sign-in" OnSubmit="SignInAsync" method="post">
+    <ErrorMessage Error="error" />
+    <p>
+        <label for="signin-username">username</label><br />
+        <InputText id="signin-username" @bind-Value="Input!.Username" autocomplete="username" required />
+    </p>
+    <p>
+        <label for="signin-password">password</label><br />
+        <InputText id="signin-password" type="password" @bind-Value="Input!.Password" autocomplete="current-password" required />
+    </p>
+    <p><button type="submit">sign in</button></p>
+</EditForm>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [Parameter] public string? ReturnUrl { get; set; }
+    [SupplyParameterFromForm(FormName = "sign-in")] private CredentialsForm? Input { get; set; }
+    private ServiceError? error;
+
+    protected override void OnInitialized() => Input ??= new();
+
+    private async Task SignInAsync()
+    {
+        var result = await Accounts.CheckCredentialsAsync(Input!.Username, Input.Password);
+        if (!result.Ok)
+        {
+            error = result.Error;
+            Input.Password = null; // don't echo the password back into the page
+            return;
+        }
+        await WebSignIn.SignInAsync(HttpContext, result.Value!);
+        Nav.NavigateTo(WebSignIn.LocalUrl(ReturnUrl));
+    }
+
+    private class CredentialsForm
+    {
+        public string? Username { get; set; }
+        public string? Password { get; set; }
+    }
+}

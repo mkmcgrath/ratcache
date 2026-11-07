@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using RatCache.Web.Components;
 using RatCache.Web.Controllers;
@@ -31,6 +32,10 @@ builder.Services.AddSingleton<PasteEncryption>();      // NFR-1.2 (needs RatCach
 builder.Services.AddScoped<AccountService>();          // FR-1.1 – 1.6
 builder.Services.AddScoped<ApiTokenService>();         // FR-1.8
 builder.Services.AddScoped<PasteService>();            // FR-2.x
+
+// The web paste form posts content as one form field. The default 4 MB field limit is below the
+// 5 MB registered paste cap (NFR-3.1); PasteService still enforces the real limit.
+builder.Services.Configure<FormOptions>(o => o.ValueLengthLimit = PasteService.RegisteredMaxBytes + 1024 * 1024);
 
 // Sign-in: session cookie for the web, Bearer API token for the CLI (Services/AuthenticationSetup.cs).
 builder.Services.AddRatCacheAuth();

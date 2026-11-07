@@ -2,5 +2,10 @@
     <NavLink href="" Match="NavLinkMatch.All"><strong>ratcache</strong></NavLink>
     <NavLink href="recent">recent</NavLink>
     <NavLink href="my">my pastes</NavLink>
-    <NavLink href="account">account</NavLink>
+    <NavLink href="account">@(HttpContext?.User.Identity?.IsAuthenticated == true ? HttpContext.User.Identity.Name : "sign in")</NavLink>
 </nav>
+
+@code {
+    // Static SSR supplies the request; null if this ever renders interactively.
+    [CascadingParameter] private HttpContext? HttpContext { get; set; }
+}

@@ -1,0 +1,6 @@
+@* A UTC time, shown the same way everywhere. *@
+<time datetime="@Value.ToString("O")">@Value.ToString("yyyy-MM-dd HH:mm") UTC</time>
+
+@code {
+    [Parameter, EditorRequired] public DateTime Value { get; set; }
+}

@@ -175,19 +175,25 @@ MapStaticAssets, MapControllers, MapRazorComponents<App>
 3. Inject services with `@inject PasteService Pastes`. Don't inject `RatCacheDbContext` or `HttpClient`.
 4. If it belongs in the nav, add a `<NavLink>` to `Layout/NavMenu.razor`. **The nav is shared: change it in small, separate commits** so merges are easy.
 5. Replace the placeholder's `TODO FR-x` comment and "Not implemented yet" text when you implement it.
+6. **Forms and sign-in (web):** pages are static SSR, so forms are `<EditForm FormName="..." method="post">` with a `[SupplyParameterFromForm(FormName = "...")]` model (set it with `??= new()` in `OnInitialized`). Every form name on a page must be unique. For many buttons doing the same thing (revoke a token), use one form and give each button `name`/`value`, as in `Account/ApiTokens.razor`.
+   - Get the signed-in user from `[CascadingParameter] HttpContext` (`HttpContext.User.GetUserId()`). Pages that need sign-in use `@attribute [Authorize]`; signed-out visitors are redirected to `/account?ReturnUrl=...`.
+   - Sign in and out through `Components/Account/WebSignIn.cs`. It also checks that `ReturnUrl` is local (no open redirects). This only works in static SSR, because the cookie is set on the HTTP response.
+   - Never echo a password back into the page after a failed submit.
+   - Show errors with `<ErrorMessage Error="..." />` and times with `<Timestamp Value="..." />` (`Components/Shared/`).
 
 Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depend on. **Keep them stable:**
 
 | Route | File | Waiting for |
 |---|---|---|
-| `/` | `Home.razor` | FR-5.1, FR-2.1 (form exists; submit disabled) |
-| `/p/{Id}` | `PasteView.razor` | FR-2.3, FR-4.2, FR-4.4, FR-2.9 |
+| `/` | `Home.razor` | done (FR-5.1, FR-2.1) |
+| `/p/{Id}` | `PasteView.razor` | FR-4.2, FR-4.4, FR-2.9 (FR-2.3 view and FR-2.6 delete done) |
+| `/p/{Id}/edit` | `EditPaste.razor` | done (FR-2.5) |
 | `/recent` | `Recent.razor` | FR-3.6 |
-| `/my` | `MyPastes.razor` | FR-2.7, FR-2.5, FR-2.6 |
-| `/account` | `Account.razor` | FR-1.1, 1.3, 1.5, 1.6, 1.8 (may be split into `/account/*` pages) |
+| `/my` | `MyPastes.razor` | done (FR-2.7) |
+| `/account` | `Account.razor` | done (FR-1.1, 1.3–1.6, 1.8); pieces in `Components/Account/` |
 | `/not-found` | `NotFound.razor` | NFR-4.2: shared page for missing, expired, AND private pastes |
 | `/Error` | `Error.razor` | NFR-4.3 |
-| `/raw/{id}` | `Controllers/RawController.cs` | FR-2.4 (returns 501 now) |
+| `/raw/{id}` | `Controllers/RawController.cs` | done (FR-2.4) |
 
 ### 6.2 An API endpoint
 

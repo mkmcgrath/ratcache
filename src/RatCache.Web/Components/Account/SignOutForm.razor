@@ -1,0 +1,17 @@
+@* FR-1.4: sign out (clears the session cookie). A POST, so other sites can't sign you out with a link. *@
+@inject NavigationManager Nav
+
+<form method="post" @formname="sign-out" @onsubmit="SignOutAsync">
+    <AntiforgeryToken />
+    <button type="submit">sign out</button>
+</form>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+
+    private async Task SignOutAsync()
+    {
+        await WebSignIn.SignOutAsync(HttpContext);
+        Nav.NavigateTo("/");
+    }
+}
