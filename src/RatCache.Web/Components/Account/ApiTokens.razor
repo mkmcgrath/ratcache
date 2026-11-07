@@ -1,0 +1,94 @@
+@* FR-1.8: create, list and revoke API tokens for the CLI. *@
+@inject ApiTokenService Tokens
+
+<h2>api tokens</h2>
+
+<p>the cli sends a token as <code>Authorization: Bearer &lt;token&gt;</code>.</p>
+
+@if (created is not null)
+{
+    <p role="status">new token "@created.Info.Name". copy it now; it won't be shown again:</p>
+    <pre>@created.Token</pre>
+}
+
+<ErrorMessage Error="error" />
+
+@if (tokens.Count == 0)
+{
+    <p>no tokens.</p>
+}
+else
+{
+    @* One form for every revoke button; the clicked button sends its token id. *@
+    <form method="post" @formname="revoke-token" @onsubmit="RevokeAsync">
+        <AntiforgeryToken />
+        <table>
+            <thead>
+                <tr><th>name</th><th>created</th><th>last used</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in tokens)
+                {
+                    <tr>
+                        <td>@t.Name</td>
+                        <td><Timestamp Value="t.CreatedAt" /></td>
+                        <td>@if (t.LastUsedAt is { } used) { <Timestamp Value="used" /> } else { <text>never</text> }</td>
+                        <td><button type="submit" name="RevokeId" value="@t.Id">revoke</button></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </form>
+}
+
+<EditForm Model="Input" FormName="create-token" OnSubmit="CreateAsync" method="post">
+    <p>
+        <label for="token-name">new token name</label><br />
+        <InputText id="token-name" @bind-Value="Input!.Name" placeholder="cli" maxlength="@ApiTokenService.NameMaxLength" />
+    </p>
+    <p><button type="submit">create token</button></p>
+</EditForm>
+
+@code {
+    [CascadingParameter] private HttpContext HttpContext { get; set; } = default!;
+    [SupplyParameterFromForm(FormName = "create-token")] private TokenModel? Input { get; set; }
+    [SupplyParameterFromForm(FormName = "revoke-token")] private int? RevokeId { get; set; }
+
+    private List<ApiTokenInfo> tokens = [];
+    private NewApiToken? created;
+    private ServiceError? error;
+
+    private int UserId => HttpContext.User.GetUserId()!.Value;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Input ??= new();
+        tokens = await Tokens.ListAsync(UserId);
+    }
+
+    private async Task CreateAsync()
+    {
+        var result = await Tokens.CreateAsync(UserId, Input!.Name);
+        if (!result.Ok)
+        {
+            error = result.Error;
+            return;
+        }
+        created = result.Value;
+        Input = new();
+        tokens = await Tokens.ListAsync(UserId);
+    }
+
+    private async Task RevokeAsync()
+    {
+        if (RevokeId is not { } id) return;
+        var result = await Tokens.RevokeAsync(UserId, id);
+        if (!result.Ok) error = result.Error;
+        tokens = await Tokens.ListAsync(UserId);
+    }
+
+    private class TokenModel
+    {
+        public string? Name { get; set; }
+    }
+}

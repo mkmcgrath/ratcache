@@ -40,8 +40,15 @@ h1:focus {
     outline: 1px solid red;
 }
 
-.validation-message {
+.validation-message,
+.error {
     color: red;
+}
+
+th,
+td {
+    text-align: left;
+    padding-right: 1rem;
 }
 
 .blazor-error-boundary {

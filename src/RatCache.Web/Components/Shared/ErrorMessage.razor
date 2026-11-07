@@ -1,0 +1,9 @@
+@* Shows a service error's plain-language message (NFR-4.1). Renders nothing when Error is null. *@
+@if (Error is not null)
+{
+    <p class="error" role="alert">@Error.Message</p>
+}
+
+@code {
+    [Parameter] public ServiceError? Error { get; set; }
+}
