@@ -152,6 +152,13 @@ public class PasteService(RatCacheDbContext db, PasteEncryption crypto, TimeProv
         return ServiceResult.Success();
     }
 
+    // FR-3.5: permanently deletes every paste whose expiry has passed. Returns how many were removed.
+   public Task<int> PurgeExpiredAsync()
+   {
+       var now = Now();
+       return db.Pastes.Where(p => p.ExpiresAt != null && p.ExpiresAt <= now).ExecuteDeleteAsync();
+   }
+
     // The paste if it exists, hasn't expired, and the viewer is allowed to see it.
     private async Task<Paste?> FindVisibleAsync(string id, int? viewerId)
     {

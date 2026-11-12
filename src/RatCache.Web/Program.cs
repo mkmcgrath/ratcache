@@ -27,11 +27,12 @@ builder.Services.AddDbContext<RatCacheDbContext>(options =>
 // Register your own services (Services/) here, e.g.:
 // builder.Services.AddScoped<IPasteService, PasteService>();
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddSingleton<PasswordHasher>();       // NFR-2.1
-builder.Services.AddSingleton<PasteEncryption>();      // NFR-1.2 (needs RatCache:EncryptionKey)
-builder.Services.AddScoped<AccountService>();          // FR-1.1 – 1.6
-builder.Services.AddScoped<ApiTokenService>();         // FR-1.8
-builder.Services.AddScoped<PasteService>();            // FR-2.x
+builder.Services.AddSingleton<PasswordHasher>();          // NFR-2.1
+builder.Services.AddSingleton<PasteEncryption>();         // NFR-1.2 (needs RatCache:EncryptionKey)
+builder.Services.AddScoped<AccountService>();             // FR-1.1 – 1.6
+builder.Services.AddScoped<ApiTokenService>();            // FR-1.8
+builder.Services.AddHostedService<ExpiredPasteCleaner>(); // FR-3.5: delete expired pastes
+builder.Services.AddScoped<PasteService>();               // FR-2.x
 
 // The web paste form posts content as one form field. The default 4 MB field limit is below the
 // 5 MB registered paste cap (NFR-3.1); PasteService still enforces the real limit.

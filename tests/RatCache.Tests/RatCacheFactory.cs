@@ -27,6 +27,7 @@ public class RatCacheFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting("ConnectionStrings:Default", _connectionString);
         builder.UseSetting("RatCache:EncryptionKey", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
+        builder.UseSetting("RatCache:PurgeIntervalMinutes", "0");
     }
 
     // A client with its own cookie jar. https, because the session cookie is Secure-only.
