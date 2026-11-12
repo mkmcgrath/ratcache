@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
+    <link rel="stylesheet" href="@Assets["lib/highlight/github.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["RatCache.Web.styles.css"]" />
     <ImportMap />
@@ -16,6 +17,9 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    @* Loaded on every page: enhanced navigation doesn't run <script> tags in new page content. *@
+    <script src="@Assets["lib/highlight/highlight.min.js"]"></script>
+    <script src="@Assets["js/paste.js"]"></script>
 </body>
 
 </html>
