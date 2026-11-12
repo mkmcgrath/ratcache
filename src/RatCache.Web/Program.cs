@@ -63,6 +63,8 @@ else
     app.UseHsts();
 }
 
+app.UseMiddleware<RequestIdAndErrorMiddleware>();
+
 // Show the NotFound page for unknown web URLs. API routes keep their own status codes.
 app.UseWhen(
     ctx => !ctx.Request.Path.StartsWithSegments("/api") && !ctx.Request.Path.StartsWithSegments("/raw"),

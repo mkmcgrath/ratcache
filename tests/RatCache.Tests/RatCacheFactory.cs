@@ -3,6 +3,9 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace RatCache.Tests;
 
@@ -11,6 +14,7 @@ namespace RatCache.Tests;
 // Use it as IClassFixture<RatCacheFactory>.
 public class RatCacheFactory : WebApplicationFactory<Program>
 {
+    public CapturingLoggerProvider Logs { get; } = new();
     private readonly string _connectionString =
         $"Data Source=ratcache-test-{Guid.NewGuid():N};Mode=Memory;Cache=Shared";
 
@@ -25,6 +29,8 @@ public class RatCacheFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        builder.ConfigureServices(s => s.AddSingleton<ILoggerProvider>(Logs));
+        builder.ConfigureTestServices(s => s.AddControllers().AddApplicationPart(typeof(ApiBoomController).Assembly));
         builder.UseSetting("ConnectionStrings:Default", _connectionString);
         builder.UseSetting("RatCache:EncryptionKey", Convert.ToBase64String(RandomNumberGenerator.GetBytes(32)));
         builder.UseSetting("RatCache:PurgeIntervalMinutes", "0");
