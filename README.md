@@ -63,18 +63,26 @@ To point the CLI at a different server:
 export RATCACHE_URL=https://example.com
 ```
 
-Planned commands:
+Commands:
 
 | Command | Does |
 |---|---|
-| `ratcache [file]` | Create a paste from a file, or from stdin (`cat log.txt \| ratcache`) |
-| `ratcache get <id>` | Print a paste's raw text |
-| `ratcache login` / `logout` | Sign in / out |
+| `ratcache [file]` | Create a paste from a file, or from stdin (`cat log.txt \| ratcache`), and print its link |
+| `ratcache get <id or link>` | Print a paste's raw text |
+| `ratcache login` / `logout` | Sign in (saves an API token) / sign out (revokes it) |
 | `ratcache list` | List your pastes |
-| `ratcache edit <id> [file]` | Change a paste |
+| `ratcache edit <id> [file]` | Replace a paste's content (`-` reads stdin) or change its options |
 | `ratcache delete <id>` | Delete a paste |
 
-Options: `--title`, `--lang`, `--visibility public|unlisted|private`, `--expire 10m|1h|1d|1w|1mo|never`
+Options for create and edit: `--title`, `--lang`, `--visibility public|unlisted|private`, `--expire 10m|1h|1d|1w|1mo|never`.
+
+```bash
+python3 -m ratcache login
+python3 -m ratcache main.py --visibility unlisted --expire 1d   # language guessed from .py
+python3 -m ratcache list
+```
+
+Pastes made while signed in belong to your account. `login` saves the token in `~/.config/ratcache/config.json` (`%APPDATA%\ratcache\config.json` on Windows), readable only by you, and the CLI keeps using that server until you set `RATCACHE_URL`. Exit status is 0 on success, 1 on failure, and 2 for bad usage.
 
 ## Project layout
 

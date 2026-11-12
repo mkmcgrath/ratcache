@@ -31,6 +31,44 @@ pre {
     overflow-x: auto;
 }
 
+/* Paste page: line numbers (FR-4.4) beside the code. Both columns must share font,
+   line height and padding so the numbers line up. Lines don't wrap; the code scrolls. */
+.paste-body {
+    display: flex;
+    border: 1px solid #ccc;
+}
+
+.paste-body pre {
+    margin: 0;
+    padding: 0.5rem;
+    line-height: 1.4;
+    font-size: 0.9rem;
+}
+
+.paste-body .line-numbers {
+    text-align: right;
+    color: #888;
+    border-right: 1px solid #ccc;
+    user-select: none;
+    overflow: visible;
+}
+
+.paste-body .paste-code {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Undo the highlight.js theme's own padding and background so the columns line up. */
+.paste-body pre code.hljs {
+    padding: 0;
+    background: none;
+    overflow: visible;
+}
+
+.share-bar [data-copy-status] {
+    margin-left: 0.5rem;
+}
+
 h1:focus {
     outline: none;
 }
