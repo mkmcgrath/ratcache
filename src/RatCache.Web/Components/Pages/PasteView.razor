@@ -4,8 +4,10 @@
 
 @* FR-2.3: show a paste. Missing, expired and someone else's private paste all get the
    same NotFound page (NFR-4.2).
-   TODO FR-4.2 / FR-4.4: syntax highlighting and line numbers.
-   TODO FR-2.9: copy link / copy content buttons. *@
+   FR-4.2: wwwroot/js/paste.js highlights <code data-lang> in the browser with the vendored
+   highlight.js (wwwroot/lib/highlight). FR-4.4: line numbers are rendered here, so they show
+   without JS. FR-2.9: the copy/share buttons are also paste.js; they stay hidden without JS.
+   Paste content is only ever output as text (@paste.Content), never as MarkupString (NFR-3.3). *@
 @if (paste is not null)
 {
     <PageTitle>@Heading</PageTitle>
@@ -40,7 +42,20 @@
         </form>
     }
 
-    <pre><code>@paste.Content</code></pre>
+    <p class="share-bar" data-share-bar data-id="@paste.Id" hidden>
+        <button type="button" data-copy="link">copy link</button>
+        <button type="button" data-copy="content">copy text</button>
+        <button type="button" data-copy="raw">copy raw link</button>
+        <button type="button" data-share hidden>share</button>
+        <span data-copy-status role="status" aria-live="polite"></span>
+    </p>
+
+    <p data-highlight-note hidden>too long to highlight; shown as plain text.</p>
+
+    <div class="paste-body">
+        <pre class="line-numbers" aria-hidden="true">@lineNumbers</pre>
+        <pre class="paste-code"><code data-lang="@paste.Language">@paste.Content</code></pre>
+    </div>
 }
 
 @code {
@@ -63,6 +78,19 @@
             return;
         }
         paste = result.Value;
+        lineNumbers = LineNumbers(paste!.Content);
+    }
+
+    private string lineNumbers = "";
+
+    // "1\n2\n3": one number per line the browser will show. Browsers treat \r\n and a lone \r
+    // in HTML text as one line break, and a final newline doesn't start a visible line.
+    public static string LineNumbers(string content)
+    {
+        var text = content.Replace("\r\n", "\n").Replace('\r', '\n');
+        var count = text.Count(c => c == '\n') + 1;
+        if (count > 1 && text.EndsWith('\n')) count--;
+        return string.Join('\n', Enumerable.Range(1, count));
     }
 
     // FR-2.6 (owner) / FR-7.1 (admin).

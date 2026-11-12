@@ -56,15 +56,18 @@ ratcache/
 │ ├ Models/                       entity / data classes; Languages.cs (shared language IDs)
 │ ├ Data/RatCacheDbContext.cs     EF Core DbContext (no DbSets yet)
 │ ├ Services/                     business logic shared by pages and controllers
-│ └ wwwroot/app.css               the only global stylesheet
+│ └ wwwroot/                      app.css (the only global stylesheet of ours);
+│                                 js/paste.js (highlighting + copy buttons);
+│                                 lib/highlight/ (vendored highlight.js 11.11.1 + github theme)
 ├ tests/RatCache.Tests/           xUnit, references RatCache.Web
 │ └ HealthTests.cs                in-memory app tests (the pattern)
 └ cli/                            Python CLI
   ├ pyproject.toml                console script `ratcache` -> ratcache.main:main
   ├ ratcache/main.py              argparse; one cmd_* function per command
-  ├ ratcache/client.py            HTTP helper; base URL from RATCACHE_URL
+  ├ ratcache/client.py            all HTTP; ApiError; server URL + token lookup
+  ├ ratcache/config.py            saved login file (FR-6.4), see §6.5
   ├ ratcache/__main__.py          enables `python3 -m ratcache`
-  └ tests/test_cli.py             unittest
+  └ tests/test_cli.py             unittest, against an in-process FakeServer
 ```
 
 Mapping from the original Node-style skeleton. `documentation/ratcacheProjectSkeleton.docx` now shows the .NET tree; if the layout changes, update that file too:
@@ -119,7 +122,7 @@ pip install -e cli                                             # optional: puts 
 The app was generated with `dotnet new blazor --interactivity Server --all-interactive false --empty`.
 
 - **Pages render statically on the server by default.** Each request produces plain HTML. Forms are normal HTML form posts. This is the default because cookie sign-in (NFR-2.5) and antiforgery work simply this way.
-- A page that genuinely needs live interactivity (for example, a copy-to-clipboard button, FR-2.9) can add `@rendermode InteractiveServer`. Prefer a tiny interactive **component** inside a static page over making the whole page interactive.
+- Browser-only behavior (highlighting, copy-to-clipboard) is plain JS in `wwwroot/js/`; see §7. A page that genuinely needs live server interactivity can add `@rendermode InteractiveServer`. Prefer a tiny interactive **component** inside a static page over making the whole page interactive.
 - **Never** switch the app to global interactivity or WebAssembly without a team decision. Auth and forms depend on static rendering.
 
 **Forms on static pages** use `EditForm` with `FormName`, plus `[SupplyParameterFromForm]`:
@@ -186,7 +189,7 @@ Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depe
 | Route | File | Waiting for |
 |---|---|---|
 | `/` | `Home.razor` | done (FR-5.1, FR-2.1) |
-| `/p/{Id}` | `PasteView.razor` | FR-4.2, FR-4.4, FR-2.9 (FR-2.3 view and FR-2.6 delete done) |
+| `/p/{Id}` | `PasteView.razor` | done (FR-2.3, FR-2.6, FR-2.9, FR-4.2, FR-4.4); see §7 for the JS |
 | `/p/{Id}/edit` | `EditPaste.razor` | done (FR-2.5) |
 | `/recent` | `Recent.razor` | FR-3.6 |
 | `/my` | `MyPastes.razor` | done (FR-2.7) |
@@ -245,10 +248,20 @@ Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depe
 - All commands live in `cli/ratcache/main.py`. Each one is a `cmd_<name>(args) -> int` function, wired into `build_parser()` with `set_defaults(func=...)`.
 - **Only the first argument is checked for a command name.** If it isn't one, the CLI creates a new paste (SRS §5.3: `ratcache file.txt`, `cat x | ratcache --lang python`). This keeps `ratcache --title list` from running the `list` command. If you add a command, add its name to `COMMANDS`.
 - Commands and flags are fixed by **SRS §5.3**: `ratcache [file]`, `get <id>`, `login`, `logout`, `list`, `edit <id> [file]`, `delete <id>`, plus `ping`. Flags: `--title`, `--lang`, `--visibility public|unlisted|private`, `--expire 10m|1h|1d|1w|1mo|never`. The shared flags are defined once in `add_paste_options()`.
-- **Exit codes (FR-6.6):** `0` success, `1` error, `2` not implemented or usage error (argparse also uses 2). **Errors go to stderr through `error()`** (NFR-4.5). Only real output goes to stdout, so it can be piped.
-- All HTTP goes through `cli/ratcache/client.py`. Extend it with `post_json`, `patch_json`, `delete`, and raw-text GET helpers rather than calling urllib from commands. Raise `ApiError` on failures, and once the server sends the JSON error shape (§6.2.5), surface its `message`.
-- Server URL: the `RATCACHE_URL` env var, defaulting to `http://localhost:5097`. The API token (FR-6.4) goes in a config file in the user's home directory. The location and format are up to whoever builds `login`, and it must work on Linux, macOS, and Windows (SRS §2.3); `~/.config/ratcache/config.json` is suggested. Record the decision here.
-- Test with `unittest` + `unittest.mock`. Mock `client` functions so tests don't need a running server.
+- **Exit codes (FR-6.6):** `0` success; `1` failure (server error, network, not signed in: raise `Failure` or return `api_failed(e)`); `2` usage error (raise `UsageError`; argparse also uses 2). **Errors go to stderr through `error()`** (NFR-4.5). Only results go to stdout (links, raw content, the `list` table), so they can be piped. Status lines like "signed in" and "deleted" go to stderr.
+- All HTTP goes through `cli/ratcache/client.py`: `request()`, plus `get_json`, `post_json`, `patch_json`, `delete`, `get_raw`. Don't call urllib from commands. Any non-2xx status raises `ApiError` carrying the server's `message`, `code` (the snake_case `error`) and `status`. Credentials are added as unredirected headers, so they're never forwarded on a redirect.
+- **Server URL:** `RATCACHE_URL` if set, else the server you last logged in to (saved in the config file), else `http://localhost:5097`. A paste link passed to `get`/`edit`/`delete` uses that link's server.
+- **Saved login (FR-6.4), decided:** one JSON file, `{"url", "username", "token", "token_id"}`, written 0600 in a 0700 folder (`cli/ratcache/config.py`).
+  - Linux/macOS: `$XDG_CONFIG_HOME/ratcache/config.json`, default `~/.config/ratcache/config.json`.
+  - Windows: `%APPDATA%\ratcache\config.json`.
+  - Override: `RATCACHE_CONFIG=/path/file.json` (the tests use this).
+  - The token is only sent to the `url` it was issued by (`client.saved_token()`).
+- **Login flow:** `POST /api/sessions`, then `POST /api/tokens` with the session cookie (name `cli on <hostname>`), then `DELETE /api/sessions`. Logging in again revokes the previous token.
+  - The cookie is read from `Set-Cookie` by hand, because it's `Secure` and Python's cookie jar won't send it back over `http://localhost`.
+  - `--password-stdin` reads the password from stdin, for scripts.
+- **Logout:** `DELETE /api/tokens/{token_id}`, then remove the token from the file. A 401 or 404 counts as already revoked. If the server can't be reached, the token stays saved and the command exits 1.
+- Create/edit read files as UTF-8 (anything else is a usage error). `-` means stdin. `ratcache` at a terminal with no file and no piped input is a usage error rather than a hang. Without `--lang`, create guesses the language from the file extension (`EXTENSIONS`; unknown extensions use the server default).
+- **Tests** (`cli/tests/test_cli.py`) run each command against `FakeServer`, an in-process `http.server` that mimics the API, with a temporary config file. No real server is needed. When the API changes shape, update `FakeServer` too.
 
 ### 6.6 Tests
 
@@ -269,13 +282,21 @@ A paste's language is stored and sent as a short lowercase ID, never as a displa
 
 The site is "by developers for developers": **plain, minimal, no design.**
 
-- **No** colors (except red for validation errors), gradients, shadows, rounded cards, icons, web fonts, animations, or CSS frameworks (no Bootstrap, no Tailwind).
+- **No** colors (except red for validation errors, and the syntax-highlighting theme with a grey line-number gutter on the paste page), gradients, shadows, rounded cards, icons, web fonts, animations, or CSS frameworks (no Bootstrap, no Tailwind).
 - Browser defaults first. `wwwroot/app.css` holds everything global: monospace font, a 960px max width, nav spacing, full-width text inputs. Add rules only when something is unusable without them.
 - Component-scoped CSS (`X.razor.css`) is allowed for layout tweaks under the same rules.
 - Lowercase UI text, matching the existing nav and pages ("new paste", "my pastes").
 - The app must work from 360px to 1920px (FR-5.3). Plain flow layout covers this; don't add fixed widths.
 - A dark theme (FR-5.4) is a Could. If it's built, use `prefers-color-scheme` with the same plain approach.
-- Syntax highlighting (FR-4.2) uses a third-party library (SRS §2.5). Pick one, load it from `wwwroot/` (not a CDN), and keep its theme plain.
+- **Syntax highlighting (FR-4.2), decided:** highlight.js 11.11.1, the "common" build, vendored in `wwwroot/lib/highlight/` with its BSD license and the `github` theme. Never load it from a CDN. It covers all 15 language IDs (`html` maps to its xml grammar).
+  - `wwwroot/js/paste.js` highlights every `<code data-lang="...">` in the browser. `text` and unknown IDs stay plain. Pastes over 200,000 characters aren't highlighted (it would freeze the tab), and the page shows a note.
+  - highlight.js reads `textContent` and writes escaped HTML, so this doesn't weaken NFR-3.3.
+  - **Line numbers (FR-4.4)** are rendered on the server (`PasteView.LineNumbers`) in a separate `<pre class="line-numbers" aria-hidden>` column, so they work without JS and aren't selected or copied with the code. Lines don't wrap, which keeps the columns aligned; long lines scroll sideways.
+  - To add a language: add it to `Languages.cs` and the CLI's `LANGUAGES`. If the common build doesn't include it, vendor that grammar file from the same version and add a `<script>` for it after `highlight.min.js` in `App.razor`.
+- **Copy/share buttons (FR-2.9)** are plain JS in `paste.js`, not an `InteractiveServer` component. They need no SignalR connection, and the clipboard is browser-only anyway.
+  - The bar is `hidden` in the markup and shown by JS, so no-JS visitors don't see dead buttons. "share" (the Web Share API) only appears where `navigator.share` exists, mostly mobile.
+  - `navigator.clipboard` needs https or localhost. Elsewhere, `paste.js` falls back to `execCommand("copy")`.
+- **Scripts and enhanced navigation:** `blazor.web.js` swaps pages without running `<script>` tags in the new content. Page scripts therefore load once in `App.razor` and rerun their setup on `Blazor.addEventListener("enhancedload", ...)`. Attach click handlers to `document`, not to elements on the page.
 
 ## 8. Security rules that apply to every change
 
@@ -333,7 +354,6 @@ The starting point is allowed to change. Here's what to watch:
 
 - No README setup guide yet (NFR-6.1).
 - Not deployed. UpCloud deployment, HTTPS certificates (NFR-1.1), and Docker are future work.
-- Not decided yet: the CLI config file location. Whoever builds `ratcache login` records it here. The CLI login flow is `POST /api/sessions` (keep the cookie), then `POST /api/tokens`; save `token` and `id` (`id` is needed for `DELETE /api/tokens/{id}` on logout).
 - Not built yet: sign-in lockout after 5 failures (NFR-2.3), JSON 500 bodies for `/api` in production (`UseExceptionHandler` currently re-executes to the HTML `/Error` page), rate limiting (NFR-3.6), and the expired-paste cleanup job (FR-3.5: expired pastes are already hidden but stay in the DB).
 - Paste links in API responses are built from the request's scheme and host. Behind nginx on UpCloud, add `UseForwardedHeaders` so they come out as `https://`.
 - SRS loose ends: FR-1.7 needs an email that registration no longer collects, NFR-3.5 still mentions email format, and §2.4 still says the stack is undecided.
