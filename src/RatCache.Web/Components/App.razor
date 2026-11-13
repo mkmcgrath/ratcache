@@ -7,6 +7,7 @@
     <base href="/" />
     <ResourcePreloader />
     <link rel="stylesheet" href="@Assets["lib/highlight/github.min.css"]" />
+    <link id="highlight-dark-theme" rel="stylesheet" href="@Assets["lib/highlight/dark.min.css"]" disabled />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["RatCache.Web.styles.css"]" />
     <ImportMap />
@@ -20,6 +21,7 @@
     @* Loaded on every page: enhanced navigation doesn't run <script> tags in new page content. *@
     <script src="@Assets["lib/highlight/highlight.min.js"]"></script>
     <script src="@Assets["js/paste.js"]"></script>
+    <script src="@Assets["js/theme.js"]"></script>
 </body>
 
 </html>

@@ -25,6 +25,16 @@ public partial class PageTests(RatCacheFactory factory) : IClassFixture<RatCache
     private static string Location(HttpResponseMessage response) =>
         response.Headers.Location is { } l ? (l.IsAbsoluteUri ? l.PathAndQuery : l.OriginalString) : "";
 
+    [Fact]
+    public async Task SharedNavigation_OffersThemeToggleAndDarkHighlightTheme()
+    {
+        var html = await factory.NewClient().GetStringAsync("/");
+
+        Assert.Contains("data-theme-toggle", html);
+        Assert.Contains("id=\"highlight-dark-theme\"", html);
+        Assert.Contains("js/theme.js", html);
+    }
+
     private static async Task<string> CreatePasteAsync(HttpClient client, string content, string visibility = "public")
     {
         var response = await PostFormAsync(client, "/", "new-paste", new()

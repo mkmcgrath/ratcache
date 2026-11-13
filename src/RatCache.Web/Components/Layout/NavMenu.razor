@@ -3,6 +3,7 @@
     <NavLink href="recent">recent</NavLink>
     <NavLink href="my">my pastes</NavLink>
     <NavLink href="account">@(HttpContext?.User.Identity?.IsAuthenticated == true ? HttpContext.User.Identity.Name : "sign in")</NavLink>
+    <button type="button" data-theme-toggle aria-label="Switch to dark theme" aria-pressed="false">Dark mode</button>
 </nav>
 
 @code {

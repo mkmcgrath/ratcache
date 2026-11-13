@@ -1,5 +1,31 @@
 /* Keep it plain. Browser defaults first; only add what's needed. */
 
+:root {
+    color-scheme: light;
+    --page-background: #fff;
+    --text-color: #222;
+    --border-color: #ccc;
+    --surface-background: #f6f8fa;
+    --muted-color: #777;
+    --error-color: #b00020;
+}
+
+html[data-theme="dark"] {
+    color-scheme: dark;
+    --page-background: #0d1117;
+    --text-color: #e6edf3;
+    --border-color: #30363d;
+    --surface-background: #161b22;
+    --muted-color: #8b949e;
+    --error-color: #ff7b72;
+}
+
+html,
+body {
+    background: var(--page-background);
+    color: var(--text-color);
+}
+
 body {
     font-family: monospace;
     max-width: 960px;
@@ -8,16 +34,30 @@ body {
 }
 
 nav {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
     padding: 1rem 0;
-    border-bottom: 1px solid;
+    border-bottom: 1px solid var(--border-color);
 }
 
 nav a {
-    margin-right: 1rem;
+    color: inherit;
 }
 
 nav a.active {
     text-decoration: none;
+}
+
+nav [data-theme-toggle] {
+    margin-left: auto;
+    color: var(--text-color);
+    background: var(--surface-background);
+    border: 1px solid var(--border-color);
+    padding: 0.35rem 0.6rem;
+    font: inherit;
+    cursor: pointer;
 }
 
 textarea,
@@ -25,6 +65,9 @@ input:not([type=checkbox]):not([type=radio]) {
     width: 100%;
     box-sizing: border-box;
     font-family: monospace;
+    color: var(--text-color);
+    background: var(--page-background);
+    border: 1px solid var(--border-color);
 }
 
 pre {
@@ -35,7 +78,7 @@ pre {
    line height and padding so the numbers line up. Lines don't wrap; the code scrolls. */
 .paste-body {
     display: flex;
-    border: 1px solid #ccc;
+    border: 1px solid var(--border-color);
 }
 
 .paste-body pre {
@@ -47,8 +90,8 @@ pre {
 
 .paste-body .line-numbers {
     text-align: right;
-    color: #888;
-    border-right: 1px solid #ccc;
+    color: var(--muted-color);
+    border-right: 1px solid var(--border-color);
     user-select: none;
     overflow: visible;
 }
@@ -80,7 +123,7 @@ h1:focus {
 
 .validation-message,
 .error {
-    color: red;
+    color: var(--error-color);
 }
 
 th,
@@ -91,7 +134,7 @@ td {
 
 .blazor-error-boundary {
     padding: 1rem;
-    border: 1px solid red;
+    border: 1px solid var(--error-color);
 }
 
 .blazor-error-boundary::after {
