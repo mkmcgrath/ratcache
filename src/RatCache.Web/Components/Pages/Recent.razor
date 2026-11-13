@@ -1,8 +1,38 @@
 @page "/recent"
+@inject PasteService Pastes
 
 <PageTitle>recent pastes</PageTitle>
 
 <h1>recent pastes</h1>
 
-@* TODO FR-3.6: list the 20 most recent public pastes. *@
-<p>Not implemented yet (FR-3.6).</p>
+@* FR-3.6: the 20 most recent public pastes, newest first. Unlisted, private and expired
+   pastes never show up here (FR-3.1, FR-3.5). *@
+@if (pastes.Count == 0)
+{
+    <p>no public pastes yet. <a href="">make one</a>.</p>
+}
+else
+{
+    <table>
+        <thead>
+            <tr><th>title</th><th>language</th><th>created</th><th>expires</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var p in pastes)
+            {
+                <tr>
+                    <td><a href="p/@p.Id">@(p.Title ?? p.Id)</a></td>
+                    <td>@PasteChoices.LanguageLabel(p.Language)</td>
+                    <td><Timestamp Value="p.CreatedAt" /></td>
+                    <td>@if (p.ExpiresAt is { } e) { <Timestamp Value="e" /> } else { <text>never</text> }</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<PasteSummary> pastes = [];
+
+    protected override async Task OnInitializedAsync() => pastes = await Pastes.ListRecentPublicAsync();
+}

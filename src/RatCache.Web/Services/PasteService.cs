@@ -32,6 +32,7 @@ public class PasteService(RatCacheDbContext db, PasteEncryption crypto, TimeProv
     public const int TitleMaxLength = 200;
     public const int AnonymousMaxBytes = 1024 * 1024;     // NFR-3.1: 1 MB
     public const int RegisteredMaxBytes = 5 * 1024 * 1024; // NFR-3.1: 5 MB
+    public const int RecentCount = 20;                     // FR-3.6
 
     // FR-3.3. Keys are what the web form and the CLI's --expire send.
     public static readonly IReadOnlyDictionary<string, Func<DateTime, DateTime?>> ExpireOptions =
@@ -99,6 +100,18 @@ public class PasteService(RatCacheDbContext db, PasteEncryption crypto, TimeProv
         var pastes = await db.Pastes.AsNoTracking()
             .Where(p => p.OwnerId == userId && (p.ExpiresAt == null || p.ExpiresAt > now))
             .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+        return pastes.Select(ToSummary).ToList();
+    }
+
+    // FR-3.6: the newest public pastes, for anyone. Unlisted, private and expired pastes are left out (FR-3.1, FR-3.5).
+    public async Task<List<PasteSummary>> ListRecentPublicAsync(int count = RecentCount)
+    {
+        var now = Now();
+        var pastes = await db.Pastes.AsNoTracking()
+            .Where(p => p.Visibility == Visibility.Public && (p.ExpiresAt == null || p.ExpiresAt > now))
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(count)
             .ToListAsync();
         return pastes.Select(ToSummary).ToList();
     }

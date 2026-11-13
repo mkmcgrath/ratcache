@@ -50,6 +50,16 @@ public class PastesController(PasteService pastes) : ControllerBase
             p.CreatedAt, p.UpdatedAt, p.ExpiresAt)));
     }
 
+    // GET /api/pastes/recent -> the 20 newest public pastes, newest first (no content). No sign-in needed (FR-3.6).
+    // The literal "recent" segment takes precedence over GET {id}, and paste IDs are 10 characters, so they can't collide.
+    [HttpGet("recent")]
+    public async Task<IActionResult> Recent()
+    {
+        var list = await pastes.ListRecentPublicAsync();
+        return Ok(list.Select(p => Summary(p.Id, p.Title, p.Language, p.Visibility,
+            p.CreatedAt, p.UpdatedAt, p.ExpiresAt)));
+    }
+
     // PATCH /api/pastes/{id} -> 200 with the updated paste. Send only the fields to change.
     [Authorize]
     [HttpPatch("{id}")]

@@ -191,7 +191,7 @@ Existing placeholder routes are the public URLs the SRS (§5.1) and the CLI depe
 | `/` | `Home.razor` | done (FR-5.1, FR-2.1) |
 | `/p/{Id}` | `PasteView.razor` | done (FR-2.3, FR-2.6, FR-2.9, FR-4.2, FR-4.4); see §7 for the JS |
 | `/p/{Id}/edit` | `EditPaste.razor` | done (FR-2.5) |
-| `/recent` | `Recent.razor` | FR-3.6 |
+| `/recent` | `Recent.razor` | done (FR-3.6) |
 | `/my` | `MyPastes.razor` | done (FR-2.7) |
 | `/account` | `Account.razor` | done (FR-1.1, 1.3–1.6, 1.8); pieces in `Components/Account/` |
 | `/not-found` | `NotFound.razor` | NFR-4.2: shared page for missing, expired, AND private pastes |
