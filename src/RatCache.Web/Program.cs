@@ -50,6 +50,10 @@ _ = app.Services.GetRequiredService<PasteEncryption>();
 using (var scope = app.Services.CreateScope())
 {
     scope.ServiceProvider.GetRequiredService<RatCacheDbContext>().Database.Migrate();
+
+    // FR-7.1: RatCache:AdminUsernames lists who may delete any paste. Restart to change it.
+    var adminNames = app.Configuration.GetSection("RatCache:AdminUsernames").Get<string[]>() ?? [];
+    await scope.ServiceProvider.GetRequiredService<AccountService>().SyncAdminsAsync(adminNames);
 }
 
 // ---- HTTP pipeline ----

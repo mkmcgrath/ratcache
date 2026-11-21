@@ -15,7 +15,7 @@ public class User
     // signs the user out everywhere.
     public string SecurityStamp { get; set; } = "";
 
-    // FR-7.1: admins can delete any paste. No UI to set this yet.
+    // FR-7.1: admins can delete any paste. Set from RatCache:AdminUsernames at startup (AccountService.SyncAdminsAsync).
     public bool IsAdmin { get; set; }
 
     public DateTime CreatedAt { get; set; }

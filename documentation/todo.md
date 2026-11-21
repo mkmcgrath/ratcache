@@ -29,7 +29,7 @@ All remote branches are merged into `main`. Both test suites pass: 78 .NET tests
 
 1. [ ] **Remove or gitignore `out/`.** It's an untracked `dotnet publish` folder from Nov 7, so someone could commit it by accident.
 2. [ ] **Recent pastes (FR-3.6).** `Recent.razor` is still a "Not implemented yet" placeholder, and `GET /api/pastes/recent` from §5.2 doesn't exist. This is the last placeholder and the last missing endpoint, so add its tests at the same time.
-3. [ ] **A way to make someone an admin (FR-7.1).** Admin delete already works in the API and on the paste page, but nothing sets `User.IsAdmin`. A config setting or a one-off command would do.
+3. [x] **A way to make someone an admin (FR-7.1).** Done: list usernames in `RatCache:AdminUsernames` (env var `RatCache__AdminUsernames__0`) and restart. Anyone not listed is made a normal user, and a role change signs that user out of their web sessions.
 4. [ ] **Deploy to UpCloud (NFR-1.1, NFR-1.3).** This is the only Must left, and it has the most unknowns, so do it early. It involves:
    - a domain and DNS
    - a reverse proxy with a Let's Encrypt certificate (TLS 1.2 or later) and HTTP-to-HTTPS redirects
