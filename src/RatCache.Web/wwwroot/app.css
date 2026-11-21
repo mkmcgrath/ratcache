@@ -1,99 +1,381 @@
-/* Keep it plain. Browser defaults first; only add what's needed. */
-
 :root {
     color-scheme: light;
-    --page-background: #fff;
-    --text-color: #222;
-    --border-color: #ccc;
-    --surface-background: #f6f8fa;
-    --muted-color: #777;
-    --error-color: #b00020;
+    --page-background: #fffaf0;
+    --text-color: #242a32;
+    --border-color: #e6dece;
+    --surface-background: #fff;
+    --surface-muted: #f5f0e5;
+    --muted-color: #6b7280;
+    --accent-color: #b85b16;
+    --accent-hover: #93440e;
+    --accent-contrast: #fff;
+    --error-color: #b42318;
+    --focus-color: #e59a32;
+    --code-background: #f3f1eb;
+    --shadow-color: rgb(48 38 20 / 8%);
 }
 
 html[data-theme="dark"] {
     color-scheme: dark;
-    --page-background: #0d1117;
-    --text-color: #e6edf3;
-    --border-color: #30363d;
-    --surface-background: #161b22;
-    --muted-color: #8b949e;
-    --error-color: #ff7b72;
+    --page-background: #14171b;
+    --text-color: #e8e4dc;
+    --border-color: #343a40;
+    --surface-background: #1d2228;
+    --surface-muted: #252b32;
+    --muted-color: #a0a8b2;
+    --accent-color: #f0a54b;
+    --accent-hover: #ffc16f;
+    --accent-contrast: #20170d;
+    --error-color: #ff8178;
+    --focus-color: #ffc16f;
+    --code-background: #101317;
+    --shadow-color: rgb(0 0 0 / 22%);
 }
 
-html,
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-width: 320px;
+    background: var(--page-background);
+    scroll-behavior: smooth;
+}
+
 body {
+    max-width: 1100px;
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: 0 2rem;
     background: var(--page-background);
     color: var(--text-color);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 1rem;
+    line-height: 1.6;
 }
 
-body {
-    font-family: monospace;
-    max-width: 960px;
-    margin: 0 auto;
-    padding: 0 1rem;
+::selection {
+    background: var(--accent-color);
+    color: var(--accent-contrast);
+}
+
+a {
+    color: var(--accent-color);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid var(--focus-color);
+    outline-offset: 3px;
 }
 
 nav {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 1rem;
-    padding: 1rem 0;
+    gap: 0.4rem;
+    min-height: 76px;
+    padding: 0.85rem 0;
     border-bottom: 1px solid var(--border-color);
 }
 
 nav a {
-    color: inherit;
+    display: inline-flex;
+    align-items: center;
+    min-height: 42px;
+    padding: 0.45rem 0.85rem;
+    border-radius: 0.6rem;
+    color: var(--muted-color);
+    font-size: 0.94rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 140ms ease, color 140ms ease;
 }
 
+nav a:hover,
 nav a.active {
-    text-decoration: none;
+    background: var(--surface-muted);
+    color: var(--text-color);
+}
+
+nav a:first-child {
+    margin-right: 0.65rem;
+    padding-left: 0;
+    color: var(--text-color);
+    font-size: 1.2rem;
+    letter-spacing: -0.04em;
+}
+
+nav a:first-child strong {
+    font-weight: 800;
 }
 
 nav [data-theme-toggle] {
+    min-height: 40px;
     margin-left: auto;
-    color: var(--text-color);
-    background: var(--surface-background);
+    padding: 0.45rem 0.8rem;
     border: 1px solid var(--border-color);
-    padding: 0.35rem 0.6rem;
+    border-radius: 999px;
+    background: var(--surface-background);
+    color: var(--text-color);
     font: inherit;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+nav [data-theme-toggle]:hover {
+    border-color: var(--accent-color);
+    background: var(--surface-muted);
+}
+
+main {
+    padding: 2.5rem 0 4rem;
+}
+
+h1,
+h2,
+h3 {
+    color: var(--text-color);
+    line-height: 1.2;
+    letter-spacing: -0.035em;
+}
+
+h1 {
+    margin: 0 0 1.5rem;
+    font-size: clamp(1.8rem, 4vw, 2.45rem);
+    font-weight: 750;
+}
+
+h2 {
+    margin: 2.25rem 0 0.75rem;
+    font-size: 1.35rem;
+}
+
+h1:focus {
+    outline: none;
+}
+
+main > p {
+    color: var(--muted-color);
+}
+
+main > p a {
+    font-weight: 600;
+}
+
+form {
+    margin: 0;
+}
+
+main > form,
+main > p:has(+ form) {
+    max-width: 100%;
+}
+
+label {
+    display: inline-block;
+    margin-bottom: 0.35rem;
+    color: var(--text-color);
+    font-size: 0.92rem;
+    font-weight: 650;
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.55rem;
+    background: var(--surface-background);
+    color: var(--text-color);
+    font: inherit;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 20%, transparent);
+    outline: none;
+}
+
+textarea {
+    min-height: 250px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    tab-size: 4;
+}
+
+select {
     cursor: pointer;
 }
 
-textarea,
-input:not([type=checkbox]):not([type=radio]) {
-    width: 100%;
-    box-sizing: border-box;
-    font-family: monospace;
+main form p {
+    margin: 1.15rem 0;
+}
+
+small {
+    color: var(--muted-color);
+    font-size: 0.84rem;
+}
+
+button {
+    min-height: 42px;
+    padding: 0.55rem 1rem;
+    border: 1px solid var(--accent-color);
+    border-radius: 0.55rem;
+    background: var(--accent-color);
+    color: var(--accent-contrast);
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+button:hover {
+    border-color: var(--accent-hover);
+    background: var(--accent-hover);
+}
+
+button:active {
+    transform: translateY(1px);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+main > p > button,
+.share-bar button {
+    margin: 0.2rem 0.35rem 0.2rem 0;
+}
+
+.share-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin: 1.5rem 0;
+}
+
+.share-bar [data-copy-status] {
+    margin-left: 0.4rem;
+    color: var(--muted-color);
+    font-size: 0.9rem;
+}
+
+main > form:has(button[type="submit"]:only-child) button,
+button[name="RevokeId"],
+form:has(button[name="RevokeId"]) button {
+    border-color: var(--border-color);
+    background: var(--surface-muted);
     color: var(--text-color);
-    background: var(--page-background);
+}
+
+form:has(button[name="RevokeId"]) button:hover {
+    border-color: var(--error-color);
+    color: var(--error-color);
+}
+
+table {
+    width: 100%;
+    margin: 1.5rem 0;
     border: 1px solid var(--border-color);
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.7rem;
+    overflow: hidden;
+    background: var(--surface-background);
+    box-shadow: 0 6px 20px var(--shadow-color);
+}
+
+th,
+td {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    text-align: left;
+    vertical-align: middle;
+}
+
+th {
+    background: var(--surface-muted);
+    color: var(--muted-color);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.055em;
+    text-transform: uppercase;
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+tbody tr:hover {
+    background: color-mix(in srgb, var(--surface-muted) 55%, transparent);
+}
+
+td a {
+    font-weight: 650;
 }
 
 pre {
     overflow-x: auto;
 }
 
-/* Paste page: line numbers (FR-4.4) beside the code. Both columns must share font,
-   line height and padding so the numbers line up. Lines don't wrap; the code scrolls. */
+main > pre {
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.65rem;
+    background: var(--code-background);
+}
+
+code,
+pre {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
 .paste-body {
     display: flex;
+    max-width: 100%;
     border: 1px solid var(--border-color);
+    border-radius: 0.7rem;
+    overflow: auto;
+    background: var(--code-background);
+    box-shadow: 0 6px 20px var(--shadow-color);
 }
 
 .paste-body pre {
     margin: 0;
-    padding: 0.5rem;
-    line-height: 1.4;
-    font-size: 0.9rem;
+    padding: 1rem;
+    line-height: 1.55;
+    font-size: 0.88rem;
 }
 
 .paste-body .line-numbers {
-    text-align: right;
-    color: var(--muted-color);
+    flex: 0 0 auto;
+    min-width: 3.5rem;
     border-right: 1px solid var(--border-color);
+    color: var(--muted-color);
+    text-align: right;
     user-select: none;
-    overflow: visible;
 }
 
 .paste-body .paste-code {
@@ -101,24 +383,14 @@ pre {
     min-width: 0;
 }
 
-/* Undo the highlight.js theme's own padding and background so the columns line up. */
 .paste-body pre code.hljs {
     padding: 0;
-    background: none;
     overflow: visible;
+    background: none;
 }
 
-.share-bar [data-copy-status] {
-    margin-left: 0.5rem;
-}
-
-h1:focus {
-    outline: none;
-}
-
-/* Blazor form validation (EditForm) */
 .invalid {
-    outline: 1px solid red;
+    outline: 1px solid var(--error-color);
 }
 
 .validation-message,
@@ -126,17 +398,89 @@ h1:focus {
     color: var(--error-color);
 }
 
-th,
-td {
-    text-align: left;
-    padding-right: 1rem;
-}
-
 .blazor-error-boundary {
     padding: 1rem;
     border: 1px solid var(--error-color);
+    border-radius: 0.55rem;
 }
 
 .blazor-error-boundary::after {
     content: "An error has occurred.";
+}
+
+#blazor-error-ui {
+    position: fixed;
+    z-index: 10;
+    right: 1rem;
+    bottom: 1rem;
+    left: 1rem;
+    display: none;
+    max-width: 1068px;
+    margin: 0 auto;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--error-color);
+    border-radius: 0.65rem;
+    background: var(--surface-background);
+    box-shadow: 0 8px 26px var(--shadow-color);
+}
+
+#blazor-error-ui .dismiss {
+    float: right;
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    body {
+        padding: 0 1rem;
+    }
+
+    nav {
+        gap: 0.15rem;
+        padding: 0.6rem 0;
+    }
+
+    nav a {
+        min-height: 38px;
+        padding: 0.4rem 0.55rem;
+        font-size: 0.86rem;
+    }
+
+    nav a:first-child {
+        width: 100%;
+        margin: 0 0 0.15rem;
+        padding-left: 0.55rem;
+    }
+
+    nav [data-theme-toggle] {
+        margin-left: auto;
+    }
+
+    main {
+        padding-top: 1.75rem;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    th,
+    td {
+        padding: 0.7rem 0.8rem;
+    }
+
+    .paste-body pre {
+        padding: 0.75rem;
+        font-size: 0.82rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
 }
