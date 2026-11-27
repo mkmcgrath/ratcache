@@ -38,6 +38,14 @@ The database (`src/RatCache.Web/ratcache.db`) is created on first run.
 
 Open <http://localhost:5097>.
 
+To make a registered user an admin (who can delete any paste), list their username and restart the app:
+
+```bash
+dotnet user-secrets set "RatCache:AdminUsernames:0" "yourusername" --project src/RatCache.Web
+```
+
+On a server, set the environment variable `RatCache__AdminUsernames__0` instead. Users who aren't listed are normal users.
+
 ## Running the tests
 
 ```bash

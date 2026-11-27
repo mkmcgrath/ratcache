@@ -23,3 +23,7 @@ dist/
 # Editors / OS
 .idea/
 .DS_Store
+
+#other
+/out
+

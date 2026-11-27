@@ -122,5 +122,25 @@ public partial class AccountService(RatCacheDbContext db, PasswordHasher hasher,
         return null;
     }
 
+    // FR-7.1: makes exactly the named users admins and everyone else a normal user. Run at startup
+    // with the RatCache:AdminUsernames setting. A user whose role changes gets a new security stamp,
+    // which signs out their web sessions so the old role isn't kept in a cookie. Returns how many changed.
+    public async Task<int> SyncAdminsAsync(IEnumerable<string> usernames)
+    {
+        var wanted = usernames.Select(n => n.Trim()).Where(n => n.Length > 0).ToList();
+        var users = await db.Users.Where(u => u.IsAdmin || wanted.Contains(u.Username)).ToListAsync();
+        var changed = 0;
+        foreach (var user in users)
+        {
+            var shouldBeAdmin = wanted.Contains(user.Username, StringComparer.OrdinalIgnoreCase);
+            if (user.IsAdmin == shouldBeAdmin) continue;
+            user.IsAdmin = shouldBeAdmin;
+            user.SecurityStamp = NewSecurityStamp();
+            changed++;
+        }
+        if (changed > 0) await db.SaveChangesAsync();
+        return changed;
+    }
+
     private static string NewSecurityStamp() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
 }
