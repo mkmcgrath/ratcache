@@ -14,6 +14,8 @@ public partial class AccountService(RatCacheDbContext db, PasswordHasher hasher,
     public const int UsernameMaxLength = 32;
     public const int PasswordMinLength = 12;   // NFR-2.2
     public const int PasswordMaxLength = 128;  // keeps hashing cost bounded
+    public const int MaxFailedSignIns = 5;     // NFR-2.3
+    public static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     [GeneratedRegex("^[A-Za-z0-9_-]+$")]
     private static partial Regex UsernameChars();
@@ -53,6 +55,8 @@ public partial class AccountService(RatCacheDbContext db, PasswordHasher hasher,
     }
 
     // FR-1.3. Returns the user if the username and password match.
+    // NFR-2.3: 5 wrong passwords in a row lock the account for 15 minutes. While locked the password
+    // isn't checked at all, so guessing right can't unlock it. A correct password resets the count.
     public async Task<ServiceResult<User>> CheckCredentialsAsync(string? username, string? password)
     {
         username = username?.Trim() ?? "";
@@ -66,7 +70,39 @@ public partial class AccountService(RatCacheDbContext db, PasswordHasher hasher,
             hasher.VerifyDummy(password); // same timing as a real check
             return BadCredentials;
         }
-        return hasher.Verify(password, user.PasswordHash) ? user : BadCredentials;
+
+        var now = time.GetUtcNow().UtcDateTime;
+        if (user.LockoutUntil is { } until)
+        {
+            if (until > now)
+            {
+                var minutes = (int)Math.Ceiling((until - now).TotalMinutes);
+                return new ServiceError(ErrorKind.TooManyRequests, "account_locked",
+                    $"Too many failed sign-ins. Try again in {minutes} minute{(minutes == 1 ? "" : "s")}.");
+            }
+            // The lockout has ended: start counting from zero.
+            user.LockoutUntil = null;
+            user.FailedSignInCount = 0;
+        }
+
+        if (hasher.Verify(password, user.PasswordHash))
+        {
+            if (user.FailedSignInCount != 0)
+            {
+                user.FailedSignInCount = 0;
+                await db.SaveChangesAsync();
+            }
+            return user;
+        }
+
+        user.FailedSignInCount++;
+        if (user.FailedSignInCount >= MaxFailedSignIns)
+        {
+            user.LockoutUntil = now + LockoutDuration;
+            user.FailedSignInCount = 0;
+        }
+        await db.SaveChangesAsync();
+        return BadCredentials;
     }
 
     // FR-1.5. Rotates the security stamp, which signs out every other browser session.

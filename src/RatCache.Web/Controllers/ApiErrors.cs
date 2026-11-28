@@ -18,6 +18,7 @@ public static class ApiErrors
         ErrorKind.NotFound => StatusCodes.Status404NotFound,
         ErrorKind.Conflict => StatusCodes.Status409Conflict,
         ErrorKind.TooLarge => StatusCodes.Status413PayloadTooLarge,
+        ErrorKind.TooManyRequests => StatusCodes.Status429TooManyRequests,
         _ => StatusCodes.Status500InternalServerError,
     };
 

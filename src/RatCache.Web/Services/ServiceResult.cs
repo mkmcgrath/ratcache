@@ -10,6 +10,7 @@ public enum ErrorKind
     NotFound,       // 404
     Conflict,       // 409
     TooLarge,       // 413
+    TooManyRequests, // 429
 }
 
 // Code is a stable snake_case id (the API's "error" field); Message is plain language.

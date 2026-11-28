@@ -107,8 +107,14 @@ namespace RatCache.Web.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("FailedSignInCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsAdmin")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LockoutUntil")
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

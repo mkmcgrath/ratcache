@@ -18,6 +18,12 @@ public class User
     // FR-7.1: admins can delete any paste. Set from RatCache:AdminUsernames at startup (AccountService.SyncAdminsAsync).
     public bool IsAdmin { get; set; }
 
+    // NFR-2.3: consecutive wrong passwords at sign-in. Reset by a correct password or once a lockout ends.
+    public int FailedSignInCount { get; set; }
+
+    // NFR-2.3: while this is in the future, sign-in is refused even with the right password.
+    public DateTime? LockoutUntil { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public List<Paste> Pastes { get; set; } = [];
